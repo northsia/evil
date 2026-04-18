@@ -1,7 +1,10 @@
+from flask import Flask
 from RNA import go
 import requests
-import time 
+import time
+import threading
 
+app = Flask(__name__)
 
 def send_order():
     person = go()
@@ -26,7 +29,6 @@ def send_order():
         "line_items[0][variant_title]": "Default Title",
         "bundle_discount": '{"type":"price","value":3500,"title":"New offer","original_total":13500,"discounted_total":10000,"discount_amount":3500,"productId":"8842497360029"}',
 
-        # Person data from go()
         "first_name": person["first_name"],
         "last_name": person["last_name"],
         "phone": person["phone"],
@@ -66,11 +68,26 @@ def send_order():
     return response
 
 
-while True:
+def loop_requests():
+    while True:
+        try:
+            req = send_order()
+            if req.status_code == 200:
+                print("send +")
+        except Exception as e:
+            print("error:", e)
 
-    req = send_order()
-    
-    if (req.status_code == 200):
-        print("send +")
+        time.sleep(15)
 
-    time.sleep(15)
+
+@app.route("/")
+def home():
+    return "Hello"
+
+
+if __name__ == "__main__":
+    t = threading.Thread(target=loop_requests)
+    t.daemon = True
+    t.start()
+
+    app.run(host="0.0.0.0", port=5000)
